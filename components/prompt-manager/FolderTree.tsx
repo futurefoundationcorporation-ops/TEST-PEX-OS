@@ -154,7 +154,7 @@ const TreeViewNode: React.FC<TreeViewNodeProps> = ({
             e.stopPropagation();
             onEdit(node);
           }}
-          className="p-1 mr-2 text-gray-400 hover:text-white hover:bg-white/10 rounded transition-opacity opacity-0 group-hover:opacity-100 focus:opacity-100"
+          className="p-1 mr-2 text-gray-500 hover:text-white hover:bg-white/10 rounded transition-colors"
           title={`Editar ${node.name}`}
         >
           <Edit2 size={12} />

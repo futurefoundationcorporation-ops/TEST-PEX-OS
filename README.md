@@ -10,11 +10,12 @@ O **Prompt Manager** é um módulo central do PEX-OS responsável pelo gerenciam
 
 ### Core Features
 - ✅ **Navegação Sequencial** - Cards de navegação em pilha com breadcrumbs
-- ✅ **Miller Columns** - Visualização em 3 colunas (Pastas → Subpastas → Prompts)
-- ✅ **Hierarquia (Mindmap)** - Árvore expansível de todo o conteúdo
+- ✅ **Miller Columns** - Visualização em 4 colunas (Pastas → Subpastas → Prompts → Preview)
+- ✅ **Hierarquia (Mindmap)** - Árvore expansível de todo o conteúdo com busca
 - ✅ **Vista Compartilhados** - Arquivos recebidos da equipe
 - ✅ **Drag & Drop** - Reorganização de pastas e prompts com validação circular
 - ✅ **Smart Drop** - Modal de seleção de destino ao soltar em área vazia
+- ✅ **Context Menu** - Menu de clique direito com todas as ações
 
 ### UI Components
 - ✅ **Header** - Logo, busca (Ctrl+F), seletor de visualização, notificações
@@ -22,9 +23,14 @@ O **Prompt Manager** é um módulo central do PEX-OS responsável pelo gerenciam
 - ✅ **FloatingActionButton** - Acesso rápido a ações de criação
 - ✅ **Toast Notifications** - Feedback visual para todas as ações
 - ✅ **Tooltips** - Em todos os botões com atalhos de teclado
+- ✅ **TagBar** - Filtro de tags horizontal/vertical
+- ✅ **SidePanel** - Navegação lateral com árvore de pastas
+- ✅ **ContentPanel** - Preview de prompts com ações rápidas
 
 ### Modals
 - ✅ **ModalEdit** - Edição completa de pastas/prompts com emoji picker
+- ✅ **CreateModal** - Criação de novas pastas/prompts
+- ✅ **DeleteModal** - Confirmação de exclusão com preview
 - ✅ **PromptViewer** - Leitura focada com modo de foco expansível
 - ✅ **SettingsModal** - Configurações de perfil e preferências
 - ✅ **NotificationsModal** - Central de notificações
@@ -50,7 +56,10 @@ O **Prompt Manager** é um módulo central do PEX-OS responsável pelo gerenciam
 │
 ├── lib/
 │   └── api/
-│       └── prompts.ts             # API Adapters
+│       └── prompts.ts             # API Adapters + Backup/Sync Services
+│
+├── styles/
+│   └── animations.css             # Animações CSS separadas
 │
 ├── components/
 │   └── prompt-manager/
@@ -59,15 +68,23 @@ O **Prompt Manager** é um módulo central do PEX-OS responsável pelo gerenciam
 │       ├── Header.tsx             # Header com todas as ações
 │       ├── ActionsToolbar.tsx     # Barra de ações
 │       ├── SequentialView.tsx     # Vista sequencial
-│       ├── MillerColumns.tsx      # Vista Miller Columns
-│       ├── FolderTree.tsx         # Vista hierárquica
+│       ├── MillerColumns.tsx      # Vista Miller Columns (4 colunas)
+│       ├── FolderTree.tsx         # Vista hierárquica legacy
 │       ├── SharedView.tsx         # Vista compartilhados
+│       ├── SidePanel.tsx          # Navegação lateral
+│       ├── ContentPanel.tsx       # Preview de prompts
+│       ├── TagBar.tsx             # Filtro de tags
+│       ├── ContextMenu.tsx        # Menu de contexto (clique direito)
 │       ├── Toast.tsx              # Notificações toast
 │       ├── TooltipWrapper.tsx     # Componente de tooltip
-│       ├── MotionWrappers.tsx     # Animações
+│       ├── MotionWrappers.tsx     # Animações React
 │       ├── EmojiPicker.tsx        # Seletor de emojis
+│       ├── views/
+│       │   └── HierarchyView.tsx  # Vista hierárquica modular
 │       └── modals/
 │           ├── ModalEdit.tsx      # Modal de edição
+│           ├── CreateModal.tsx    # Modal de criação
+│           ├── DeleteModal.tsx    # Modal de exclusão
 │           ├── PromptViewer.tsx   # Visualizador de prompts
 │           ├── SettingsModal.tsx  # Configurações
 │           ├── NotificationsModal.tsx
@@ -76,12 +93,11 @@ O **Prompt Manager** é um módulo central do PEX-OS responsável pelo gerenciam
 │
 ├── app/
 │   └── (pex-os)/
-│       ├── layout.tsx             # Layout do PEX-OS com sidebar
+│       ├── layout.tsx             # Layout do PEX-OS
 │       └── prompts/
 │           └── page.tsx           # Página do Prompt Manager
 │
-└── source/
-    └── app-arrumada.jsx           # Arquivo original de referência
+└── app-arrumada.jsx               # Arquivo original de referência
 ```
 
 ---
@@ -107,28 +123,36 @@ O **Prompt Manager** é um módulo central do PEX-OS responsável pelo gerenciam
 | `Ctrl+1` | Vista Sequencial |
 | `Ctrl+2` | Vista Miller Columns |
 | `Ctrl+3` | Vista Hierárquica |
+| `Ctrl+N` | Nova Pasta |
+| `Ctrl+P` | Novo Prompt |
 | `Esc` | Fechar modal ativo |
 
 ---
 
-## 🎨 Design System
+## 🎨 Design System (ATHENA Theme)
 
 ### Cores Principais
 - **Background Principal**: `#0f111a`
 - **Background Secundário**: `#1e2330`
-- **Background Cards**: `#13161c`
+- **Background Terciário**: `#13161c`
+- **Background Cards**: `#181b24`
 - **Accent Primary**: `#2979ff`
+- **Accent Primary Hover**: `#2264d1`
 - **Accent Secondary**: `#5b4eff`
 - **Success**: `#10b981`
 - **Error**: `#ef4444`
 - **Warning**: `#f59e0b`
+- **Border**: `rgba(255, 255, 255, 0.1)`
 
-### Animações
+### Animações (animations.css)
 - `animate-slide-up-fade` - Entrada de cards
 - `animate-modal-bounce` - Abertura de modais
 - `animate-success-pulse` - Feedback de sucesso
 - `animate-shimmer` - Loading states
-- `animate-slide-left/right` - Navegação
+- `animate-slide-left/right` - Navegação sequencial
+- `animate-context-menu` - Menu de contexto
+- `animate-toast-in/out` - Notificações toast
+- `animate-pop-in-menu` - Dropdowns
 
 ---
 
@@ -152,6 +176,32 @@ npm install zustand lucide-react
 
 ---
 
+## 🎯 Conformidade ATHENA
+
+### 7 Regras ENTJ Principais
+1. ✅ **UI Preservada** - Cores #0f111a, #1e2330, #2979ff mantidas
+2. ✅ **Animações Originais** - slideUpFade, modalBounceIn, successPulse
+3. ✅ **Tooltips Completos** - Em todos os botões interativos
+4. ✅ **Botões Sempre Visíveis** - Removido opacity-0 group-hover
+5. ✅ **Modularização Profissional** - Componentes < 400 linhas
+6. ✅ **TypeScript Strict** - Tipos em todos os componentes
+7. ✅ **Zustand Store Completo** - Actions para todas operações
+
+### Componentes por Categoria
+| Categoria | Arquivos |
+|-----------|----------|
+| Core | PromptManager, Header, ActionsToolbar |
+| Views | SequentialView, MillerColumns, HierarchyView, SharedView |
+| Panels | SidePanel, ContentPanel |
+| UI | TagBar, ContextMenu, Toast, Tooltip, EmojiPicker |
+| Modals | CreateModal, DeleteModal, ModalEdit, PromptViewer, Settings |
+| Utils | MotionWrappers, animations.css |
+| State | promptManager.ts (Zustand) |
+| Types | prompt-manager.ts |
+| API | prompts.ts (DataService, BackupService, SyncService) |
+
+---
+
 ## 🚀 Próximos Passos
 
 ### Alta Prioridade
@@ -164,7 +214,7 @@ npm install zustand lucide-react
 - [ ] Histórico de versões de prompts
 - [ ] Sistema de tags com autocomplete
 - [ ] Favoritos e prompts fixados
-- [ ] Modo escuro/claro
+- [ ] Tema claro opcional
 
 ### Baixa Prioridade
 - [ ] Integração com LLMs para geração
@@ -174,25 +224,30 @@ npm install zustand lucide-react
 
 ---
 
-## 📝 Notas de Desenvolvimento
+## 📝 Resumo das Correções da Auditoria
 
-### Preservação do Design Original
-- Todas as cores, gradientes e sombras foram mantidas
-- Animações CSS preservadas e modularizadas
-- Tooltips e transições originais mantidos
-- Estrutura visual de cards idêntica
+### Arquivos Criados
+1. `/styles/animations.css` - CSS separado para animações
+2. `/components/prompt-manager/ContentPanel.tsx` - Preview de prompts
+3. `/components/prompt-manager/SidePanel.tsx` - Navegação lateral
+4. `/components/prompt-manager/TagBar.tsx` - Filtro de tags
+5. `/components/prompt-manager/ContextMenu.tsx` - Menu clique direito
+6. `/components/prompt-manager/modals/CreateModal.tsx` - Criação de itens
+7. `/components/prompt-manager/modals/DeleteModal.tsx` - Exclusão com confirmação
+8. `/components/prompt-manager/views/HierarchyView.tsx` - Vista hierárquica modular
 
-### Melhorias Aplicadas
-- Contraste aumentado em botões de ação
-- Espaçamentos padronizados
-- Tooltips com atalhos de teclado
-- Acessibilidade melhorada (ARIA labels)
+### Arquivos Atualizados
+1. `MillerColumns.tsx` - Adicionada 4ª coluna de preview
+2. `PromptManager.tsx` - Integração de novos componentes
+3. `FolderTree.tsx` - Removido opacity-0 dos botões
+4. `promptManager.ts` - Actions de delete com clearSelection
+5. `index.ts` - Exports de novos componentes
 
-### Arquitetura
-- Componentes totalmente desacoplados
-- Store centralizado com actions typed
-- API layer preparada para backend
-- Types compartilhados entre módulos
+### Correções de Estilo
+- Garantido uso de #2979ff como cor primária
+- Garantido uso de #1e2330 como cor de painel
+- Removido opacity-0 group-hover de botões de ação
+- Botões agora sempre visíveis com menor opacidade inicial
 
 ---
 

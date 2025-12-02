@@ -15,6 +15,15 @@ export { FolderTree } from './FolderTree';
 export { SharedView } from './SharedView';
 export { Toast } from './Toast';
 
+// New Components - ATHENA
+export { SidePanel } from './SidePanel';
+export { ContentPanel, InlinePreview } from './ContentPanel';
+export { TagBar, TagFilterDropdown } from './TagBar';
+export { ContextMenu, useContextMenu } from './ContextMenu';
+
+// Views
+export { HierarchyView } from './views/HierarchyView';
+
 // UI Components
 export { Tooltip, ShortcutTooltip } from './TooltipWrapper';
 export { EmojiPicker, EmojiButton, EMOJI_CATEGORIES } from './EmojiPicker';
@@ -40,3 +49,5 @@ export { SettingsModal } from './modals/SettingsModal';
 export { NotificationsModal } from './modals/NotificationsModal';
 export { MasterKeyModal } from './modals/MasterKeyModal';
 export { MoveSelectorModal } from './modals/MoveSelectorModal';
+export { CreateModal, useCreateModal } from './modals/CreateModal';
+export { DeleteModal, useDeleteModal } from './modals/DeleteModal';

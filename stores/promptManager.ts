@@ -377,13 +377,23 @@ export const usePromptManagerStore = create<PromptManagerState>()(
               data: updateItemInTree(state.data, id, updates),
             })),
           
-          deleteItem: (id) =>
-            set((state) => ({
-              data: removeItemById(state.data, id),
-              selectedFolder: state.selectedFolder?.id === id ? null : state.selectedFolder,
-              selectedSubfolder: state.selectedSubfolder?.id === id ? null : state.selectedSubfolder,
-              selectedPrompt: state.selectedPrompt?.id === id ? null : state.selectedPrompt,
-            })),
+          deleteItem: (id) => {
+            const state = get();
+            const item = state.actions.findItem(id);
+            const itemName = item?.name || 'Item';
+            
+            set((s) => ({
+              data: removeItemById(s.data, id),
+              selectedFolder: s.selectedFolder?.id === id ? null : s.selectedFolder,
+              selectedSubfolder: s.selectedSubfolder?.id === id ? null : s.selectedSubfolder,
+              selectedPrompt: s.selectedPrompt?.id === id ? null : s.selectedPrompt,
+            }));
+            
+            state.actions.showToast(`"${itemName}" excluído!`, 'success');
+          },
+          
+          clearSelection: () =>
+            set({ selectedFolder: null, selectedSubfolder: null, selectedPrompt: null }),
           
           moveItem: (itemId, targetFolderId) => {
             const state = get();

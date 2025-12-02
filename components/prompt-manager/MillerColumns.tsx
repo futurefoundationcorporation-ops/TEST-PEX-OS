@@ -2,10 +2,10 @@
 
 // ============================================================================
 // PEX-OS PROMPT MANAGER - MILLER COLUMNS VIEW
-// ATHENA Architecture | Three Column Navigation | Premium Dark Theme
+// ATHENA Architecture | Four Column Navigation | Premium Dark Theme
 // ============================================================================
 
-import React from 'react';
+import React, { useState } from 'react';
 import {
   Folder,
   FileText,
@@ -15,9 +15,15 @@ import {
   FolderOpen,
   CornerDownRight,
   Sparkles,
-  Layout,
+  Eye,
+  Trash2,
+  Share2,
+  Copy,
+  CheckCircle2,
+  ExternalLink,
 } from 'lucide-react';
 import { Tooltip } from './TooltipWrapper';
+import { ContextMenu, useContextMenu } from './ContextMenu';
 import { usePromptManagerStore } from '@/stores/promptManager';
 import type { TreeNode, Folder as FolderType, Prompt } from '@/types/prompt-manager';
 
@@ -28,6 +34,8 @@ interface ColumnItemProps {
   isSelected: boolean;
   onClick: () => void;
   onEdit: (e: React.MouseEvent) => void;
+  onDelete?: (e: React.MouseEvent) => void;
+  onContextMenu: (e: React.MouseEvent) => void;
   onDragStart: (e: React.DragEvent) => void;
   onDragOver: (e: React.DragEvent) => void;
   onDragLeave: (e: React.DragEvent) => void;
@@ -42,6 +50,8 @@ const ColumnItem: React.FC<ColumnItemProps> = ({
   isSelected,
   onClick,
   onEdit,
+  onDelete,
+  onContextMenu,
   onDragStart,
   onDragOver,
   onDragLeave,
@@ -60,6 +70,7 @@ const ColumnItem: React.FC<ColumnItemProps> = ({
       onDragLeave={onDragLeave}
       onDrop={onDrop}
       onClick={onClick}
+      onContextMenu={onContextMenu}
       data-item-id={item.id}
       className={`
         group flex items-center justify-between p-3 rounded-lg cursor-pointer 
@@ -86,16 +97,25 @@ const ColumnItem: React.FC<ColumnItemProps> = ({
         </div>
       </div>
       <div className="flex items-center gap-1">
+        {/* Actions - Always Visible */}
         <button
           onClick={onEdit}
-          className="p-1 text-gray-400 hover:text-white hover:bg-white/10 rounded opacity-0 group-hover:opacity-100 transition-opacity"
+          className="p-1 text-gray-400 hover:text-white hover:bg-white/10 rounded transition-colors"
         >
           <Edit2 size={12} />
         </button>
+        {!isLocked && onDelete && (
+          <button
+            onClick={onDelete}
+            className="p-1 text-gray-400 hover:text-red-400 hover:bg-red-500/10 rounded transition-colors"
+          >
+            <Trash2 size={12} />
+          </button>
+        )}
         {isFolder && (
           <ChevronRight 
             size={14} 
-            className={`text-gray-400 transition-colors ${isSelected ? 'text-[#2979ff]' : ''}`} 
+            className={`text-gray-400 transition-colors ml-1 ${isSelected ? 'text-[#2979ff]' : ''}`} 
           />
         )}
       </div>
@@ -112,6 +132,8 @@ interface ColumnProps {
   selectedId: string | null;
   onSelect: (item: TreeNode) => void;
   onEdit: (item: TreeNode) => void;
+  onDelete: (item: TreeNode) => void;
+  onContextMenu: (e: React.MouseEvent, item: TreeNode) => void;
   onNewItem?: () => void;
   newItemLabel?: string;
   emptyTitle: string;
@@ -135,6 +157,8 @@ const Column: React.FC<ColumnProps> = ({
   selectedId,
   onSelect,
   onEdit,
+  onDelete,
+  onContextMenu,
   onNewItem,
   newItemLabel,
   emptyTitle,
@@ -153,43 +177,33 @@ const Column: React.FC<ColumnProps> = ({
   return (
     <div
       className={`
-        min-w-[300px] max-w-[300px] flex flex-col 
-        ${columnType === 'prompt' ? 'flex-1 min-w-[350px] max-w-none bg-[#13161c]' : 'bg-[#0f111a]'}
+        min-w-[280px] max-w-[280px] flex flex-col shrink-0
+        ${columnType === 'prompt' ? 'min-w-[320px] max-w-[320px]' : ''} bg-[#0f111a]
       `}
       onDragOver={onDragOver}
       onDrop={onDrop}
     >
       {/* Column Header */}
-      <div className={`
-        p-3 border-b border-white/5 flex justify-between items-center
-        ${columnType === 'prompt' ? 'bg-[#181b24]' : 'bg-[#13161c]'}
-      `}>
+      <div className="p-3 border-b border-white/5 flex justify-between items-center bg-[#13161c]">
         <span className="text-xs font-bold text-gray-400 uppercase tracking-wider flex items-center gap-2">
           {icon}
           {title}
         </span>
         {onNewItem && (
-          <button
-            onClick={onNewItem}
-            className={`
-              ${columnType === 'prompt' 
-                ? 'flex items-center gap-1 px-3 py-1.5 bg-[#2979ff] hover:bg-[#2264d1] text-white text-xs font-bold rounded-lg'
-                : 'p-1 hover:bg-white/10 rounded text-gray-400 hover:text-white transition-colors'}
-            `}
-            title={newItemLabel}
-          >
-            <Plus size={14} />
-            {columnType === 'prompt' && <span>{newItemLabel}</span>}
-          </button>
+          <Tooltip content={newItemLabel || 'Novo'} position="bottom">
+            <button
+              onClick={onNewItem}
+              disabled={isLocked}
+              className="p-1 hover:bg-white/10 rounded text-gray-400 hover:text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <Plus size={14} />
+            </button>
+          </Tooltip>
         )}
       </div>
 
       {/* Column Content */}
-      <div className={`
-        flex-1 overflow-y-auto p-2 space-y-1 custom-scrollbar
-        ${columnType === 'subfolder' ? 'bg-[#0f111a]/50' : ''}
-        ${columnType === 'prompt' ? 'p-4' : ''}
-      `}>
+      <div className="flex-1 overflow-y-auto p-2 space-y-1 custom-scrollbar">
         {items.length === 0 ? (
           <div className="h-full flex flex-col items-center justify-center text-gray-500/50 p-4 text-center">
             <div className="w-12 h-12 rounded-full bg-white/5 flex items-center justify-center mb-3">
@@ -198,23 +212,7 @@ const Column: React.FC<ColumnProps> = ({
             <p className="text-xs font-medium text-gray-400">{emptyTitle}</p>
             <p className="text-[10px] mt-1 opacity-60 max-w-[150px]">{emptyDescription}</p>
           </div>
-        ) : columnType === 'prompt' ? (
-          // Prompt Grid Layout
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
-            {items.map((item) => (
-              <PromptCard
-                key={item.id}
-                prompt={item as Prompt}
-                onSelect={() => onSelect(item)}
-                onEdit={() => onEdit(item)}
-                onDragStart={(e) => onDragStart(e, item)}
-                isLocked={isLocked}
-                isDragging={draggedItemId === item.id}
-              />
-            ))}
-          </div>
         ) : (
-          // Folder List Layout
           items.map((item) => (
             <ColumnItem
               key={item.id}
@@ -225,6 +223,11 @@ const Column: React.FC<ColumnProps> = ({
                 e.stopPropagation();
                 onEdit(item);
               }}
+              onDelete={(e) => {
+                e.stopPropagation();
+                onDelete(item);
+              }}
+              onContextMenu={(e) => onContextMenu(e, item)}
               onDragStart={(e) => onDragStart(e, item)}
               onDragOver={onItemDragOver}
               onDragLeave={onItemDragLeave}
@@ -240,71 +243,137 @@ const Column: React.FC<ColumnProps> = ({
   );
 };
 
-// --- PROMPT CARD COMPONENT ---
+// --- PREVIEW PANEL COMPONENT ---
 
-interface PromptCardProps {
-  prompt: Prompt;
-  onSelect: () => void;
+interface PreviewPanelProps {
+  prompt: Prompt | null;
   onEdit: () => void;
-  onDragStart: (e: React.DragEvent) => void;
+  onOpenFull: () => void;
   isLocked: boolean;
-  isDragging: boolean;
 }
 
-const PromptCard: React.FC<PromptCardProps> = ({
+const PreviewPanel: React.FC<PreviewPanelProps> = ({
   prompt,
-  onSelect,
   onEdit,
-  onDragStart,
+  onOpenFull,
   isLocked,
-  isDragging,
 }) => {
+  const [isCopied, setIsCopied] = useState(false);
+  const { showToast } = usePromptManagerStore((s) => s.actions);
+
+  const handleCopy = () => {
+    if (prompt) {
+      navigator.clipboard.writeText(prompt.content || '');
+      setIsCopied(true);
+      showToast('Copiado!', 'success');
+      setTimeout(() => setIsCopied(false), 2000);
+    }
+  };
+
+  if (!prompt) {
+    return (
+      <div className="flex-1 min-w-[350px] flex flex-col items-center justify-center bg-[#13161c] border-l border-white/5 text-gray-500/50 p-6">
+        <div className="w-16 h-16 rounded-xl bg-white/5 flex items-center justify-center mb-4">
+          <Eye size={28} className="opacity-40" />
+        </div>
+        <p className="text-sm font-medium text-gray-400">Preview</p>
+        <p className="text-xs mt-1 text-gray-500 text-center max-w-[200px]">
+          Selecione um prompt para visualizar
+        </p>
+      </div>
+    );
+  }
+
   return (
-    <div
-      draggable={!isLocked}
-      onDragStart={onDragStart}
-      onClick={onSelect}
-      className={`
-        group bg-[#1e2330] hover:bg-[#252b3b] border border-white/5 
-        hover:border-[#2979ff]/30 rounded-xl p-4 cursor-pointer 
-        transition-all hover:shadow-lg flex flex-col gap-3 relative overflow-hidden
-        ${isDragging ? 'opacity-40 scale-95' : ''}
-      `}
-    >
-      <div className="flex justify-between items-start">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-[#2979ff]/10 to-purple-500/10 flex items-center justify-center text-xl">
+    <div className="flex-1 min-w-[350px] flex flex-col bg-[#13161c] border-l border-white/5">
+      {/* Header */}
+      <div className="p-4 border-b border-white/5 bg-[#181b24]">
+        <div className="flex items-center gap-3 mb-3">
+          <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-[#2979ff]/20 to-purple-500/20 flex items-center justify-center text-2xl shadow-lg">
             {prompt.emoji || '📄'}
           </div>
-          <div>
-            <h4 className="text-sm font-bold text-white group-hover:text-[#2979ff] transition-colors line-clamp-1">
-              {prompt.name}
-            </h4>
-            <span className="text-[10px] text-gray-400">{prompt.category || 'Geral'}</span>
+          <div className="min-w-0 flex-1">
+            <h3 className="text-base font-bold text-white truncate">{prompt.name}</h3>
+            <div className="flex items-center gap-2 text-xs text-gray-400">
+              <span className="px-1.5 py-0.5 rounded bg-white/5 border border-white/5">
+                {prompt.category || 'Geral'}
+              </span>
+              <span>•</span>
+              <span>{prompt.date}</span>
+            </div>
           </div>
         </div>
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            onEdit();
-          }}
-          className="text-gray-400 hover:text-white opacity-0 group-hover:opacity-100 transition-opacity"
-        >
-          <Edit2 size={14} />
-        </button>
+
+        {/* Tags */}
+        {prompt.tags && prompt.tags.length > 0 && (
+          <div className="flex flex-wrap gap-1.5 mb-3">
+            {prompt.tags.map((tag) => (
+              <span
+                key={tag}
+                className="text-[10px] uppercase font-bold px-2 py-0.5 rounded bg-[#2979ff]/10 text-[#2979ff] border border-[#2979ff]/20"
+              >
+                {tag}
+              </span>
+            ))}
+          </div>
+        )}
+
+        {/* Action Buttons - Always Visible */}
+        <div className="flex items-center gap-2">
+          <button
+            onClick={onOpenFull}
+            className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-[#2979ff] hover:bg-[#2264d1] text-white text-xs font-bold rounded-lg transition-all shadow-lg shadow-blue-900/20"
+          >
+            <ExternalLink size={14} />
+            Abrir Completo
+          </button>
+          <Tooltip content="Editar" position="bottom">
+            <button
+              onClick={onEdit}
+              disabled={isLocked}
+              className="p-2 text-gray-400 hover:text-white hover:bg-white/10 rounded-lg transition-colors disabled:opacity-50"
+            >
+              <Edit2 size={16} />
+            </button>
+          </Tooltip>
+          <Tooltip content={isCopied ? 'Copiado!' : 'Copiar'} position="bottom">
+            <button
+              onClick={handleCopy}
+              className={`p-2 rounded-lg transition-colors ${
+                isCopied
+                  ? 'text-green-400 bg-green-500/10'
+                  : 'text-gray-400 hover:text-white hover:bg-white/10'
+              }`}
+            >
+              {isCopied ? <CheckCircle2 size={16} /> : <Copy size={16} />}
+            </button>
+          </Tooltip>
+          <Tooltip content="Compartilhar" position="bottom">
+            <button
+              onClick={() => showToast('Compartilhando...', 'info')}
+              className="p-2 text-gray-400 hover:text-white hover:bg-white/10 rounded-lg transition-colors"
+            >
+              <Share2 size={16} />
+            </button>
+          </Tooltip>
+        </div>
       </div>
 
-      <p className="text-xs text-gray-400 line-clamp-3 leading-relaxed bg-[#0f111a]/50 p-2 rounded border border-white/5 font-mono">
-        {prompt.content}
-      </p>
+      {/* Content Preview */}
+      <div className="flex-1 overflow-y-auto custom-scrollbar p-4">
+        <div className="bg-[#0f111a] border border-white/5 rounded-lg p-4 shadow-inner min-h-[200px]">
+          <pre className="text-sm text-gray-300 whitespace-pre-wrap font-mono leading-relaxed">
+            {prompt.content || 'Sem conteúdo'}
+          </pre>
+        </div>
+      </div>
 
-      <div className="flex items-center gap-2 mt-auto pt-2 border-t border-white/5">
-        {prompt.tags?.slice(0, 2).map((tag) => (
-          <span key={tag} className="text-[9px] uppercase font-bold text-gray-400 bg-white/5 px-1.5 py-0.5 rounded">
-            {tag}
-          </span>
-        ))}
-        <span className="text-[9px] text-gray-400 ml-auto">{prompt.date}</span>
+      {/* Footer Stats */}
+      <div className="p-4 border-t border-white/5 bg-[#0f111a]/50">
+        <div className="flex items-center justify-between text-[10px] text-gray-400">
+          <span>{prompt.content?.length || 0} caracteres</span>
+          <span>Atualizado: {prompt.date}</span>
+        </div>
       </div>
     </div>
   );
@@ -313,6 +382,8 @@ const PromptCard: React.FC<PromptCardProps> = ({
 // --- MAIN MILLER COLUMNS VIEW ---
 
 export const MillerColumns: React.FC = () => {
+  const [previewPrompt, setPreviewPrompt] = useState<Prompt | null>(null);
+
   const data = usePromptManagerStore((s) => s.data);
   const selectedFolder = usePromptManagerStore((s) => s.selectedFolder);
   const selectedSubfolder = usePromptManagerStore((s) => s.selectedSubfolder);
@@ -334,6 +405,8 @@ export const MillerColumns: React.FC = () => {
     isDescendant,
   } = usePromptManagerStore((s) => s.actions);
 
+  const { contextMenu, openContextMenu, closeContextMenu } = useContextMenu();
+
   // --- Derived State ---
 
   const rootFolders = data.filter((item) => item.type === 'folder') as FolderType[];
@@ -352,19 +425,35 @@ export const MillerColumns: React.FC = () => {
 
   const handleFolderSelect = (folder: FolderType) => {
     setSelectedFolder(folder);
+    setPreviewPrompt(null);
   };
 
   const handleSubfolderSelect = (subfolder: FolderType) => {
     setSelectedSubfolder(subfolder);
+    setPreviewPrompt(null);
   };
 
   const handlePromptSelect = (prompt: Prompt) => {
-    setSelectedPrompt(prompt);
-    setPromptViewerOpen(true);
+    setPreviewPrompt(prompt);
+  };
+
+  const handlePromptOpen = () => {
+    if (previewPrompt) {
+      setSelectedPrompt(previewPrompt);
+      setPromptViewerOpen(true);
+    }
   };
 
   const handleEdit = (item: TreeNode) => {
-    openEditModal(item, false);
+    openEditModal(item, item.type === 'prompt');
+  };
+
+  const handleDelete = (item: TreeNode) => {
+    if (isLocked) {
+      showToast('Desbloqueie para excluir', 'warning');
+      return;
+    }
+    showToast(`Excluir "${item.name}"?`, 'warning');
   };
 
   const handleNewFolder = () => {
@@ -488,79 +577,107 @@ export const MillerColumns: React.FC = () => {
   };
 
   return (
-    <div className="flex h-full divide-x divide-white/5 overflow-x-auto">
-      {/* Column 1: Root Folders */}
-      <Column
-        title="Pastas"
-        icon={<Folder size={14} />}
-        items={rootFolders}
-        selectedId={selectedFolder?.id || null}
-        onSelect={handleFolderSelect}
-        onEdit={handleEdit}
-        onNewItem={handleNewFolder}
-        newItemLabel="Nova Pasta"
-        emptyTitle="Sem pastas"
-        emptyDescription="Crie sua primeira pasta"
-        columnType="root"
-        onDragOver={handleColumnDragOver}
-        onDrop={(e) => handleColumnDrop(e, 'root')}
-        isLocked={isLocked}
-        draggedItemId={dragState.draggedItemId}
-        justDroppedId={justDroppedId}
-        onDragStart={handleDragStart}
-        onItemDragOver={handleItemDragOver}
-        onItemDragLeave={handleItemDragLeave}
-        onItemDrop={handleItemDrop}
-      />
+    <>
+      <div className="flex h-full divide-x divide-white/5 overflow-x-auto">
+        {/* Column 1: Root Folders */}
+        <Column
+          title="Pastas"
+          icon={<Folder size={14} />}
+          items={rootFolders}
+          selectedId={selectedFolder?.id || null}
+          onSelect={handleFolderSelect}
+          onEdit={handleEdit}
+          onDelete={handleDelete}
+          onContextMenu={openContextMenu}
+          onNewItem={handleNewFolder}
+          newItemLabel="Nova Pasta"
+          emptyTitle="Sem pastas"
+          emptyDescription="Crie sua primeira pasta"
+          columnType="root"
+          onDragOver={handleColumnDragOver}
+          onDrop={(e) => handleColumnDrop(e, 'root')}
+          isLocked={isLocked}
+          draggedItemId={dragState.draggedItemId}
+          justDroppedId={justDroppedId}
+          onDragStart={handleDragStart}
+          onItemDragOver={handleItemDragOver}
+          onItemDragLeave={handleItemDragLeave}
+          onItemDrop={handleItemDrop}
+        />
 
-      {/* Column 2: Subfolders */}
-      <Column
-        title="Subpastas"
-        icon={<CornerDownRight size={14} />}
-        items={subFolders}
-        selectedId={selectedSubfolder?.id || null}
-        onSelect={handleSubfolderSelect}
-        onEdit={handleEdit}
-        onNewItem={handleNewSubfolder}
-        newItemLabel="Nova Subpasta"
-        emptyTitle={selectedFolder ? 'Vazio' : 'Nenhuma pasta selecionada'}
-        emptyDescription={selectedFolder ? 'Sem subpastas aqui' : 'Selecione uma pasta raiz'}
-        columnType="subfolder"
-        onDragOver={handleColumnDragOver}
-        onDrop={(e) => handleColumnDrop(e, 'subfolder')}
-        isLocked={isLocked}
-        draggedItemId={dragState.draggedItemId}
-        justDroppedId={justDroppedId}
-        onDragStart={handleDragStart}
-        onItemDragOver={handleItemDragOver}
-        onItemDragLeave={handleItemDragLeave}
-        onItemDrop={handleItemDrop}
-      />
+        {/* Column 2: Subfolders */}
+        <Column
+          title="Subpastas"
+          icon={<CornerDownRight size={14} />}
+          items={subFolders}
+          selectedId={selectedSubfolder?.id || null}
+          onSelect={handleSubfolderSelect}
+          onEdit={handleEdit}
+          onDelete={handleDelete}
+          onContextMenu={openContextMenu}
+          onNewItem={handleNewSubfolder}
+          newItemLabel="Nova Subpasta"
+          emptyTitle={selectedFolder ? 'Vazio' : 'Nenhuma pasta selecionada'}
+          emptyDescription={selectedFolder ? 'Sem subpastas aqui' : 'Selecione uma pasta raiz'}
+          columnType="subfolder"
+          onDragOver={handleColumnDragOver}
+          onDrop={(e) => handleColumnDrop(e, 'subfolder')}
+          isLocked={isLocked}
+          draggedItemId={dragState.draggedItemId}
+          justDroppedId={justDroppedId}
+          onDragStart={handleDragStart}
+          onItemDragOver={handleItemDragOver}
+          onItemDragLeave={handleItemDragLeave}
+          onItemDrop={handleItemDrop}
+        />
 
-      {/* Column 3: Prompts */}
-      <Column
-        title="Prompts"
-        icon={<Sparkles size={14} />}
-        items={prompts}
-        selectedId={null}
-        onSelect={handlePromptSelect}
-        onEdit={handleEdit}
-        onNewItem={handleNewPrompt}
-        newItemLabel="Novo Prompt"
-        emptyTitle={selectedFolder ? 'Nenhum prompt aqui' : 'Nenhuma pasta selecionada'}
-        emptyDescription={selectedFolder ? 'Esta pasta está vazia' : 'Navegue pelas pastas'}
-        columnType="prompt"
-        onDragOver={handleColumnDragOver}
-        onDrop={(e) => handleColumnDrop(e, 'prompt')}
-        isLocked={isLocked}
-        draggedItemId={dragState.draggedItemId}
-        justDroppedId={justDroppedId}
-        onDragStart={handleDragStart}
-        onItemDragOver={handleItemDragOver}
-        onItemDragLeave={handleItemDragLeave}
-        onItemDrop={handleItemDrop}
-      />
-    </div>
+        {/* Column 3: Prompts */}
+        <Column
+          title="Prompts"
+          icon={<Sparkles size={14} />}
+          items={prompts}
+          selectedId={previewPrompt?.id || null}
+          onSelect={(item) => handlePromptSelect(item as Prompt)}
+          onEdit={handleEdit}
+          onDelete={handleDelete}
+          onContextMenu={openContextMenu}
+          onNewItem={handleNewPrompt}
+          newItemLabel="Novo Prompt"
+          emptyTitle={selectedFolder ? 'Nenhum prompt' : 'Nenhuma pasta selecionada'}
+          emptyDescription={selectedFolder ? 'Esta pasta está vazia' : 'Navegue pelas pastas'}
+          columnType="prompt"
+          onDragOver={handleColumnDragOver}
+          onDrop={(e) => handleColumnDrop(e, 'prompt')}
+          isLocked={isLocked}
+          draggedItemId={dragState.draggedItemId}
+          justDroppedId={justDroppedId}
+          onDragStart={handleDragStart}
+          onItemDragOver={handleItemDragOver}
+          onItemDragLeave={handleItemDragLeave}
+          onItemDrop={handleItemDrop}
+        />
+
+        {/* Column 4: Preview Panel */}
+        <PreviewPanel
+          prompt={previewPrompt}
+          onEdit={() => previewPrompt && handleEdit(previewPrompt)}
+          onOpenFull={handlePromptOpen}
+          isLocked={isLocked}
+        />
+      </div>
+
+      {/* Context Menu */}
+      {contextMenu && (
+        <ContextMenu
+          x={contextMenu.x}
+          y={contextMenu.y}
+          item={contextMenu.item}
+          onClose={closeContextMenu}
+          onEdit={handleEdit}
+          onDelete={handleDelete}
+        />
+      )}
+    </>
   );
 };
 
